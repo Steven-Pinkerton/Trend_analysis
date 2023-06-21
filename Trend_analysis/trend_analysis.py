@@ -1,34 +1,41 @@
 from lstm.lstm_trend_identification import LSTM
 from time_series.trend_identification import decompose_time_series, apply_exponential_smoothing, apply_prophet
+from event_identification.event_identification import EventIdentifier
 
 class TrendAnalyzer:
     def __init__(self, sentiment_data):
         self.data = sentiment_data
 
-    def identify_trends(self, method='lstm'):
+    # Existing methods...
+
+    def identify_events(self, freq='H', threshold=50, keywords=[], window=3, z_threshold=2, contamination=0.01):
         """
-        Identify trends in the sentiment data using the specified method.
+        Identify events in the sentiment data using various methods.
 
         Parameters:
-        method : str
-            The method to use for trend identification. Options are 'lstm', 'decompose', 'exponential_smoothing', and 'prophet'.
+        freq : str
+            The frequency to use for resampling the data.
+        threshold : int
+            The threshold to use for detecting high volume periods and keyword bursts.
+        keywords : list of str
+            The keywords to look for in detecting keyword bursts.
+        window : int
+            The window size to use for calculating rolling sentiment trends.
+        z_threshold : float
+            The z-score threshold to use for detecting outliers.
+        contamination : float
+            The contamination factor to use for detecting anomalies with Isolation Forest.
         """
-        if method == 'lstm':
-            trend_identifier = LSTM(self.data)
-            self.trends = trend_identifier.predict_trends()  # Assumes you add a predict_trends method to your LSTM class
-        elif method == 'decompose':
-            self.trends = decompose_time_series(self.data['sentiment_score'])
-        elif method == 'exponential_smoothing':
-            self.trends = apply_exponential_smoothing(self.data['sentiment_score'])
-        elif method == 'prophet':
-            df = self.data[['timestamp', 'sentiment_score']]
-            df.columns = ['ds', 'y']
-            forecast = apply_prophet(df)
-            self.trends = forecast['yhat']  # The forecasted values
-        else:
-            raise ValueError(f"Invalid method: {method}. Options are 'lstm', 'decompose', 'exponential_smoothing', and 'prophet'.")
+        event_identifier = EventIdentifier(self.data)
+        event_identifier.group_by_time(freq)
+        event_identifier.detect_high_volume_periods(freq, threshold)
+        event_identifier.detect_keyword_bursts(keywords, freq, threshold)
+        event_identifier.detect_rolling_trends(window)
+        event_identifier.detect_outliers(z_threshold)
+        event_identifier.detect_anomalies(contamination)
 
-        return self.trends
+        self.events = event_identifier.data
+        return self.events
     
     def estimate_trend_strength(self):
         """
