@@ -1,5 +1,5 @@
 import pandas as pd
-from db_connection import create_connection
+from Trend_analysis.Database_Code.db_connection import create_connection
 
 def fetch_data():
     conn = create_connection()
