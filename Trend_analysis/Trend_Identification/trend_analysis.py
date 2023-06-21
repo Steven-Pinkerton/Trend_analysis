@@ -70,6 +70,10 @@ class TrendAnalyzer:
         weighted_average_trends : pandas Series or DataFrame
             The weighted average of the trends identified by the different methods.
         """
+        # Check if the weights sum to 1
+        if not np.isclose(sum(weights.values()), 1, atol=1e-5):
+            raise ValueError("The sum of the weights should be 1.")
+        
         weighted_trends = None
 
         for method, weight in weights.items():
@@ -80,6 +84,3 @@ class TrendAnalyzer:
                 weighted_trends += trends * weight
 
         return weighted_trends
-    
-    
-    
