@@ -20,7 +20,6 @@ def main(url, content, api_key, board, interval):
     
     # Extract features
     features = feature_extractor.extract_features()
-    correlation_analyzer = CorrelationAnalyzer()
 
     # Fetch and preprocess stock data
     symbols = feature_extractor.extract_company(content)
@@ -44,8 +43,11 @@ def main(url, content, api_key, board, interval):
     # Perform trend analysis on the integrated data
     trends = trend_analyzer.analyze(integrated_data)
 
+    # Instantiate CorrelationAnalyzer with the integrated data
+    correlation_analyzer = CorrelationAnalyzer(integrated_data)
+
     # Perform correlation analysis on the integrated data
-    correlations = correlation_analyzer.analyze(integrated_data)
+    correlations = correlation_analyzer.calculate_rolling_correlation()
 
     return trends, correlations
 
