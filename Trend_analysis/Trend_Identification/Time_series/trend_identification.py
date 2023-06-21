@@ -25,26 +25,23 @@ def decompose_time_series(time_series, model='additive', freq=7):
     # Decompose the time series
     decomposed = seasonal_decompose(time_series, model=model, freq=freq)
 
-    # Plot the decomposed time series
-    decomposed.plot()
-    plt.show()
-
     return decomposed
 
-def apply_exponential_smoothing(series, trend=None, seasonal=None):
+def apply_exponential_smoothing(series, trend=None, seasonal=None, damping_trend=None, damping_seasonal=None):
     # First, we convert the series to a pandas Series (if it's not already), 
     # as the ExponentialSmoothing class works with pandas Series.
     if not isinstance(series, pd.Series):
         series = pd.Series(series)
 
     # Then, we fit the ExponentialSmoothing model to our data.
-    model = ExponentialSmoothing(series, trend=trend, seasonal=seasonal)
+    model = ExponentialSmoothing(series, trend=trend, seasonal=seasonal,
+                                 damped_trend=damping_trend, damped_seasonal=damping_seasonal)
     model_fit = model.fit()
 
     # Finally, we return the smoothed series.
     return model_fit.fittedvalues
 
-def apply_prophet(df):
+def apply_prophet(df, periods=30):
     # Prophet requires a DataFrame with two columns: 'ds' and 'y'
     # 'ds' is the date column and should be of datetime type
     # 'y' is the value you want to forecast
@@ -56,7 +53,7 @@ def apply_prophet(df):
     model.fit(df)
 
     # Make a future DataFrame for prediction
-    future = model.make_future_dataframe(periods=30) # forecast for the next 30 days
+    future = model.make_future_dataframe(periods=periods) # forecast for the next given periods
 
     # Use the model to make a forecast
     forecast = model.predict(future)

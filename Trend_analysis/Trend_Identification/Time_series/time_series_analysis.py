@@ -1,18 +1,19 @@
 import pandas as pd
 import numpy as np
 
-def convert_to_time_series(df):
+def convert_to_time_series(df, date_format=None):
     """
     Convert a DataFrame into a time series format.
 
     Parameters:
     df (pandas.DataFrame): The DataFrame to convert.
+    date_format (str): The date format to use for conversion.
 
     Returns:
     pandas.DataFrame: The converted DataFrame.
     """
     try:
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        df['timestamp'] = pd.to_datetime(df['timestamp'], format=date_format)
         df.set_index('timestamp', inplace=True)
         df.sort_index(inplace=True)
     except Exception as e:
