@@ -1,10 +1,15 @@
 from lstm.lstm_trend_identification import LSTM
-from time_series.trend_identification import decompose_time_series, apply_exponential_smoothing, apply_prophet
+from time_series import convert_to_time_series, resample_data, handle_missing_values, handle_outliers
 from event_identification.event_identification import EventIdentifier
 
 class TrendAnalyzer:
-    def __init__(self, sentiment_data):
-        self.data = sentiment_data
+    def __init__(self, sentiment_data, date_format=None, resample_freq=None, handle_missing_method='ffill', handle_outliers_method='median', outliers_threshold=3):
+        # Preprocess the sentiment data
+        self.data = convert_to_time_series(sentiment_data, date_format)
+        if resample_freq:
+            self.data = resample_data(self.data, 'sentiment_score', resample_freq)
+        self.data = handle_missing_values(self.data, handle_missing_method)
+        self.data = handle_outliers(self.data, handle_outliers_method, outliers_threshold)
 
     # Existing methods...
 

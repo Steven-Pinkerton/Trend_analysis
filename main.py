@@ -18,38 +18,49 @@ def main(url, content, api_key, board, interval):
     sentiment_analyzer = SentimentAnalyzer()
     trend_analyzer = TrendAnalyzer()
     
-    # Extract features
-    features = feature_extractor.extract_features()
+    while True:
+        # Extract features
+        features = feature_extractor.extract_features()
 
-    # Fetch and preprocess stock data
-    symbols = feature_extractor.extract_company(content)
-    stock_data = get_stock_data(symbols, api_key=api_key)
-    preprocessed_stock_data = preprocess_stock_data(stock_data)
+        # Fetch and preprocess stock data
+        symbols = feature_extractor.extract_company(content)
+        stock_data = get_stock_data(symbols, api_key=api_key)
+        preprocessed_stock_data = preprocess_stock_data(stock_data)
 
-    # Perform sentiment analysis on the news article
-    sentiment_score = sentiment_analyzer.analyze(content)
+        # Perform sentiment analysis on the news article
+        sentiment_score = sentiment_analyzer.analyze(content)
 
-    # Extract necessary features from the news article
-    features = feature_extractor.extract(content)
-    features['sentiment_score'] = sentiment_score
+        # Extract necessary features from the news article
+        features = feature_extractor.extract(content)
+        features['sentiment_score'] = sentiment_score
 
-    # Fetch social media data from 4chan
-    monitor_board(board, interval)
+        # Fetch social media data from 4chan
+        monitor_board(board, interval)
 
-    # Integrate stock data with sentiment data and features
-    data_integrator = DataIntegrator(preprocessed_stock_data, features)
-    integrated_data = data_integrator.integrate_data()
+        # Integrate stock data with sentiment data and features
+        data_integrator = DataIntegrator(preprocessed_stock_data, features)
+        integrated_data = data_integrator.integrate_data()
 
-    # Perform trend analysis on the integrated data
-    trends = trend_analyzer.analyze(integrated_data)
+        # Perform trend analysis on the integrated data
+        trends = trend_analyzer.analyze(integrated_data)
 
-    # Instantiate CorrelationAnalyzer with the integrated data
-    correlation_analyzer = CorrelationAnalyzer(integrated_data)
+        # Instantiate CorrelationAnalyzer with the integrated data
+        correlation_analyzer = CorrelationAnalyzer(integrated_data)
 
-    # Perform correlation analysis on the integrated data
-    correlations = correlation_analyzer.calculate_rolling_correlation()
+        # Perform correlation analysis on the integrated data
+        correlations = correlation_analyzer.calculate_rolling_correlation()
 
-    return trends, correlations
+        # Check if the correlation has stopped or trend has fallen drastically
+        if correlations < correlation_threshold or trend_slope < trend_slope_threshold:
+            print("Termination condition met. Stopping data analysis.")
+            break
+
+        # Send the trends and correlations to the Haskell program
+        # (WORK ON THIS PART)
+        send_to_haskell(trends, correlations)
+
+        print(f"[{datetime.now()}] Sent trends and correlations to Haskell program. Sleeping for {interval} seconds.")
+        time.sleep(interval)
 
 if __name__ == "__main__":
     url = "your_article_url"
