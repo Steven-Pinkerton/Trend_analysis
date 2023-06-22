@@ -24,8 +24,9 @@ class Reddit(SocialMediaSite):
 class FourChan(SocialMediaSite):
     def __init__(self):
         self.base_url = 'https://boards.4chan.org/v/'
+        self.processed_threads = set()  # Keep track of processed threads
 
-    def stream_posts(self, keywords, interval):
+    def fetch_threads(self):
         # Fetch the HTML of the page
         response = requests.get(self.base_url)
         
@@ -37,21 +38,71 @@ class FourChan(SocialMediaSite):
             # Create a BeautifulSoup object and specify the parser
             soup = BeautifulSoup(page_content, 'html.parser')
             
-            # Find all the posts on the page
-            posts = soup.find_all('div', class_='postContainer')
+            # Find all the threads on the page
+            threads = soup.find_all('div', class_='thread')
             
-            # Loop through each post and check if it contains any of the keywords
-            matching_posts = []
-            for post in posts:
-                post_text = post.get_text()
-                if any(keyword.lower() in post_text.lower() for keyword in keywords):
-                    matching_posts.append(post)
-            
-            return matching_posts
+            return threads
         
         else:
             print(f"Error: Status code {response.status_code}")
             return []
+        
+        
+    def parse_post(self, post):
+        # Extract post number, text, and date from post
+        post_number = post['id'].lstrip('p')
+        post_text = post.find('blockquote', class_='postMessage').get_text()
+        post_date = post.find('span', class_='dateTime')['data-utc']
+
+        # Create a dictionary containing post data
+        post_data = {
+            'post_number': post_number,
+            'post_text': post_text,
+            'post_date': post_date,
+        }
+
+        return post_data
+        
+    def stream_posts(self, keywords, interval):
+        # Fetch the threads
+        try:
+            threads = self.fetch_threads()
+        except requests.exceptions.RequestException as e:
+            print(f"Error: Failed to fetch threads. {e}")
+            return []
+
+        matching_posts = []
+        for thread in threads:
+            # Get the URL of the thread
+            thread_url = thread.find('a', class_='replylink')['href']
+            thread_url = self.base_url + thread_url
+
+            # Skip this thread if it has already been processed
+            if thread_url in self.processed_threads:
+                continue
+
+            # Get the OP of the thread
+            op = thread.find('div', class_='post op')
+            op_text = op.find('blockquote', class_='postMessage').get_text()
+
+            # If the OP contains any of the keywords, fetch the posts in the thread
+            if any(keyword.lower() in op_text.lower() for keyword in keywords):
+                self.processed_threads.add(thread_url)  # Mark this thread as processed
+                
+                # Fetch the HTML of the thread
+                response = requests.get(thread_url)
+                if response.status_code == 200:
+                    # Create a BeautifulSoup object and specify the parser
+                    soup = BeautifulSoup(response.content, 'html.parser')
+
+                    # Find all the posts in the thread
+                    posts = soup.find_all('div', class_='postContainer')
+
+                    for post in posts:
+                        post_data = self.parse_post(post)
+                        matching_posts.append(post_data)
+
+        return matching_posts
 
 
 class NeoGAF(SocialMediaSite):
