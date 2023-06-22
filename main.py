@@ -5,7 +5,6 @@ from stock_data_preprocessing import preprocess_stock_data
 from trend_analysis import TrendAnalyzer
 from correlation_analysis import CorrelationAnalyzer
 from data_integration import DataIntegrator
-from 4chan_scraper import monitor_board
 from dependency_parser import parse_sentence
 from fuzzy_matching import get_fuzzy_matches, is_fuzzy_match
 from keyword_generator import generate_extended_keywords
@@ -34,8 +33,8 @@ def main(url, content, api_key, board, interval):
         features = feature_extractor.extract(content)
         features['sentiment_score'] = sentiment_score
 
-        # Fetch social media data from 4chan
-        monitor_board(board, interval)
+        # Fetch social media data from 4chan (FIX THIS PART)
+        
 
         # Integrate stock data with sentiment data and features
         data_integrator = DataIntegrator(preprocessed_stock_data, features)
