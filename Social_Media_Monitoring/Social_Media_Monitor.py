@@ -172,9 +172,83 @@ class NeoGAF(SocialMediaSite):
                 del self.processed_threads[thread]
 
 class ResetEra(SocialMediaSite):
+    def __init__(self):
+        self.base_url = 'https://www.resetera.com/'
+        self.processed_threads = {}  # Keep track of processed threads and their last post time
+
+    def fetch_threads(self):
+        response = requests.get(self.base_url)
+        if response.status_code == 200:
+            page_content = response.content
+            soup = BeautifulSoup(page_content, 'html.parser')
+            threads = soup.find_all('div', class_='structItem structItem--thread')
+            return threads
+        else:
+            print(f"Error: Status code {response.status_code}")
+            return []
+        
+    def parse_post(self, post):
+        user_id = post.get('data-author')
+        post_id = post.get('data-content')
+
+        post_text = post.find('div', class_='bbWrapper').get_text()
+
+        post_date_str = post.find('time', class_='u-dt')['datetime']  
+        post_date = dateutil.parser.parse(post_date_str)  # parse the datetime string into a datetime object
+
+        post_data = {
+            'user_id': user_id,
+            'post_id': post_id,
+            'post_text': post_text,
+            'post_date': post_date,
+        }
+        return post_data
+        
     def stream_posts(self, keywords, interval):
-        # Implementation for ResetEra goes here.
-        pass
+        try:
+            threads = self.fetch_threads()
+        except requests.exceptions.RequestException as e:
+            print(f"Error: Failed to fetch threads. {e}")
+            return []
+
+        matching_posts = []
+        for thread in threads:
+            thread_url = thread.find('div', class_='structItem-title').find('a').get('href')
+            thread_url = self.base_url + thread_url
+
+            last_post_time = self.processed_threads.get(thread_url)
+            if last_post_time:
+                newest_post = thread.find('article', class_='message', order=-1)
+                newest_post_time = newest_post.find('time')['datetime']
+                if newest_post_time <= last_post_time:
+                    continue
+
+            op = thread.find('article', class_='message')
+            op_text = op.find('div', class_='bbWrapper').get_text()
+
+            if any(keyword.lower() in op_text.lower() for keyword in keywords):
+                self.processed_threads[thread_url] = None  # To be updated with the latest post's date
+                
+                response = requests.get(thread_url)
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.content, 'html.parser')
+                    posts = soup.find_all('article', class_='message')
+
+                    for post in posts:
+                        post_data = self.parse_post(post)
+                        matching_posts.append(post_data)
+
+                    self.processed_threads[thread_url] = post_data['post_date']  # Update with the latest post's date
+
+        self.cleanup_threads(12 * 60 * 60)  # Remove threads with no new posts for 12 hours
+        return matching_posts
+
+    def cleanup_threads(self, inactive_threshold):
+        current_time = datetime.datetime.now()
+        for thread, last_post_time in list(self.processed_threads.items()):
+            time_difference = current_time - datetime.datetime.fromtimestamp(last_post_time)
+            if time_difference.total_seconds() > inactive_threshold:
+                del self.processed_threads[thread]
 
 
 class GameFAQs(SocialMediaSite):

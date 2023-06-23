@@ -21,6 +21,7 @@ def main(api_key, keywords, forum, interval):
         trend_analyzer = TrendAnalyzer()
         fourchan = FourChan()
         neogaf = NeoGAF()
+        resetera = ResetEra()
 
         conn = psycopg2.connect(
             host="your_host",
@@ -33,6 +34,7 @@ def main(api_key, keywords, forum, interval):
         while True:
             social_media_data_4chan = fourchan.stream_posts(keywords, interval)
             social_media_data_neogaf = neogaf.stream_posts(keywords, interval)
+            social_media_data_resetera = resetera.stream_posts(keywords, interval)
 
             for post_data in social_media_data_4chan:
                 sentiment_score = sentiment_analyzer.analyze(post_data['post_text'])
@@ -44,7 +46,12 @@ def main(api_key, keywords, forum, interval):
                 post_data['sentiment_score'] = sentiment_score
                 insert_data(conn, 'SocialMediaPosts', post_data)
 
-            symbols = extract_company_symbols(social_media_data_4chan + social_media_data_neogaf)
+            for post_data in social_media_data_resetera:
+                sentiment_score = sentiment_analyzer.analyze(post_data['post_text'])
+                post_data['sentiment_score'] = sentiment_score
+                insert_data(conn, 'SocialMediaPosts', post_data)
+
+            symbols = extract_company_symbols(social_media_data_4chan + social_media_data_neogaf + social_media_data_resetera)
             stock_data = get_stock_data(symbols, api_key=api_key)
             preprocessed_stock_data = preprocess_stock_data(stock_data)
 
