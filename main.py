@@ -15,13 +15,14 @@ from keyword_generator import generate_extended_keywords
 from regex_patterns import generate_patterns, contains_keywords
 from scraper_database import create_connection, create_table, insert_thread, update_thread, delete_thread
 
-def main(api_key, keywords, forum, interval):
+def main(api_key, keywords, subreddit, interval):
     try:
         sentiment_analyzer = SentimentAnalyzer()
         trend_analyzer = TrendAnalyzer()
         fourchan = FourChan()
         neogaf = NeoGAF()
         resetera = ResetEra()
+        reddit = Reddit(subreddit)
 
         conn = psycopg2.connect(
             host="your_host",
@@ -35,23 +36,15 @@ def main(api_key, keywords, forum, interval):
             social_media_data_4chan = fourchan.stream_posts(keywords, interval)
             social_media_data_neogaf = neogaf.stream_posts(keywords, interval)
             social_media_data_resetera = resetera.stream_posts(keywords, interval)
+            social_media_data_reddit = reddit.stream_posts(keywords, interval)
 
-            for post_data in social_media_data_4chan:
-                sentiment_score = sentiment_analyzer.analyze(post_data['post_text'])
-                post_data['sentiment_score'] = sentiment_score
-                insert_data(conn, 'SocialMediaPosts', post_data)
+            for data in (social_media_data_4chan, social_media_data_neogaf, social_media_data_resetera, social_media_data_reddit):
+                for post_data in data:
+                    sentiment_score = sentiment_analyzer.analyze(post_data['post_text'])
+                    post_data['sentiment_score'] = sentiment_score
+                    insert_data(conn, 'SocialMediaPosts', post_data)
 
-            for post_data in social_media_data_neogaf:
-                sentiment_score = sentiment_analyzer.analyze(post_data['post_text'])
-                post_data['sentiment_score'] = sentiment_score
-                insert_data(conn, 'SocialMediaPosts', post_data)
-
-            for post_data in social_media_data_resetera:
-                sentiment_score = sentiment_analyzer.analyze(post_data['post_text'])
-                post_data['sentiment_score'] = sentiment_score
-                insert_data(conn, 'SocialMediaPosts', post_data)
-
-            symbols = extract_company_symbols(social_media_data_4chan + social_media_data_neogaf + social_media_data_resetera)
+            symbols = extract_company_symbols(social_media_data_4chan + social_media_data_neogaf + social_media_data_resetera + social_media_data_reddit)
             stock_data = get_stock_data(symbols, api_key=api_key)
             preprocessed_stock_data = preprocess_stock_data(stock_data)
 
@@ -86,7 +79,7 @@ def main(api_key, keywords, forum, interval):
 if __name__ == "__main__":
     api_key = "your_alpha_vantage_api_key"
     keywords = ["your_keywords"]
-    forum = "your_forum"
+    subreddit = "your_subreddit"
     interval = 60 
 
-    main(api_key, keywords, forum, interval)
+    main(api_key, keywords, subreddit, interval)

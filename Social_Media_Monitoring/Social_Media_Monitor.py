@@ -21,11 +21,70 @@ class Twitter(SocialMediaSite):
 
 
 class Reddit(SocialMediaSite):
+    def __init__(self, subreddit, username, password):
+        self.base_url = f'https://www.reddit.com/r/{subreddit}/'
+        self.processed_threads = {}  # Keep track of processed threads and their last post time
+
+        self.driver = webdriver.Firefox()  # Or you could use Chrome or any other browser
+
+        # Reddit login
+        self.driver.get("https://www.reddit.com/login/")
+        time.sleep(2)  # Wait for the page to load
+        self.driver.find_element_by_id("loginUsername").send_keys(username)
+        self.driver.find_element_by_id("loginPassword").send_keys(password)
+        self.driver.find_element_by_class_name("AnimatedForm__submitButton").click()
+        time.sleep(2)  # Wait for login to complete
+
+    def fetch_threads(self):
+        self.driver.get(self.base_url)
+        time.sleep(2)  # Wait for the page to load
+        threads = self.driver.find_elements_by_class_name("_1poyrkZ7g36PawDueRza-J")
+        return threads
+
+    def process_thread(self, thread):
+        # Process a single thread to extract useful information
+        try:
+            title = thread.find_element_by_class_name("_eYtD2XCVieq6emjKBH3m").text
+            link = thread.find_element_by_class_name("SQnoC3ObvgnGjWt90zD9Z_").get_attribute('href')
+            comments = thread.find_element_by_class_name("FHCV02u6Cp2zYL0fhQPsO").text
+
+            return {'title': title, 'link': link, 'comments': comments}
+        except Exception as e:
+            print(f"Error processing thread: {e}")
+            return {}
+
     def stream_posts(self, keywords, interval):
-        # Implementation for Reddit goes here.
-        pass
+        seen_post_ids = set()
+        while True:
+            hot_posts = self.reddit.subreddit(self.subreddit).hot(limit=100)
+            rising_posts = self.reddit.subreddit(self.subreddit).rising(limit=100)
 
+            for post in itertools.chain(hot_posts, rising_posts):
+                # If we've already seen this post, skip it
+                if post.id in seen_post_ids:
+                    continue
 
+                # Add the post's ID to our set of seen posts
+                seen_post_ids.add(post.id)
+
+                # Check if the post contains any of the keywords
+                if any(keyword.lower() in post.title.lower() for keyword in keywords):
+                    post_data = {
+                        'post_id': post.id,
+                        'title': post.title,
+                        'url': post.url,
+                        'created_utc': post.created_utc
+                    }
+                    yield post_data
+
+            time.sleep(interval)
+
+    def cleanup_threads(self, inactive_threshold):
+        current_time = datetime.datetime.now()
+        for thread, last_post_time in list(self.processed_threads.items()):
+            time_difference = current_time - datetime.datetime.fromtimestamp(last_post_time)
+            if time_difference.total_seconds() > inactive_threshold:
+                del self.processed_threads[thread]
 
 class FourChan(SocialMediaSite):
     def __init__(self):
@@ -251,29 +310,27 @@ class ResetEra(SocialMediaSite):
                 del self.processed_threads[thread]
 
 
+
+
 class GameFAQs(SocialMediaSite):
     def stream_posts(self, keywords, interval):
         # Implementation for GameFAQs goes here.
         pass
-
 
 class SteamCommunity(SocialMediaSite):
     def stream_posts(self, keywords, interval):
         # Implementation for Steam Community goes here.
         pass
 
-
 class StockTwits(SocialMediaSite):
     def stream_posts(self, keywords, interval):
         # Implementation for StockTwits goes here.
         pass
 
-
 class LinkedIn(SocialMediaSite):
     def stream_posts(self, keywords, interval):
         # Implementation for LinkedIn goes here.
         pass
-
 
 class SocialMediaMonitor:
     def __init__(self, sites):
@@ -286,7 +343,6 @@ class SocialMediaMonitor:
             social_media_data.append(data)
         
         return social_media_data
-
 
 if __name__ == "__main__":
     twitter = Twitter()
