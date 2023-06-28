@@ -311,27 +311,6 @@ class ResetEra(SocialMediaSite):
 
 
 
-
-class GameFAQs(SocialMediaSite):
-    def stream_posts(self, keywords, interval):
-        # Implementation for GameFAQs goes here.
-        pass
-
-class SteamCommunity(SocialMediaSite):
-    def stream_posts(self, keywords, interval):
-        # Implementation for Steam Community goes here.
-        pass
-
-class StockTwits(SocialMediaSite):
-    def stream_posts(self, keywords, interval):
-        # Implementation for StockTwits goes here.
-        pass
-
-class LinkedIn(SocialMediaSite):
-    def stream_posts(self, keywords, interval):
-        # Implementation for LinkedIn goes here.
-        pass
-
 class SocialMediaMonitor:
     def __init__(self, sites):
         self.sites = sites
