@@ -6,17 +6,18 @@ class NewsSite(ABC):
         pass
 
 
-class BBCNews(NewsSite):
+class EuroGamer(NewsSite):
     def fetch_articles(self, keywords):
-        # Implementation for BBC News goes here.
+        # Implementation for EuroGamer goes here.
         pass
 
 
-class CNNNews(NewsSite):
+class GamesIndustry(NewsSite):
     def fetch_articles(self, keywords):
-        # Implementation for CNN News goes here.
+        # Implementation for GamesIndustry goes here.
         pass
 
+# Repeat similar class definitions for GamesSpot, GameSutra, IGN, Kotaku, PCGamer, PolyGone, RPS, and VentureBeat
 
 class NewsMonitor:
     def __init__(self, sites):
