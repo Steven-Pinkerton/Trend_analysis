@@ -15,14 +15,14 @@ from keyword_generator import generate_extended_keywords
 from regex_patterns import generate_patterns, contains_keywords
 from scraper_database import create_connection, create_table, insert_thread, update_thread, delete_thread
 
-def main(api_key, keywords, subreddit, interval):
+def main(api_key, keywords, subreddits, interval):
     try:
         sentiment_analyzer = SentimentAnalyzer()
         trend_analyzer = TrendAnalyzer()
         fourchan = FourChan()
         neogaf = NeoGAF()
         resetera = ResetEra()
-        reddit = Reddit(subreddit)
+        reddit_instances = {subreddit: Reddit(subreddit) for subreddit in subreddits}
 
         conn = psycopg2.connect(
             host="your_host",
@@ -36,7 +36,9 @@ def main(api_key, keywords, subreddit, interval):
             social_media_data_4chan = fourchan.stream_posts(keywords, interval)
             social_media_data_neogaf = neogaf.stream_posts(keywords, interval)
             social_media_data_resetera = resetera.stream_posts(keywords, interval)
-            social_media_data_reddit = reddit.stream_posts(keywords, interval)
+            social_media_data_reddit = []
+            for reddit in reddit_instances.values():
+                social_media_data_reddit.extend(reddit.stream_posts(keywords, interval))
 
             for data in (social_media_data_4chan, social_media_data_neogaf, social_media_data_resetera, social_media_data_reddit):
                 for post_data in data:
@@ -79,7 +81,7 @@ def main(api_key, keywords, subreddit, interval):
 if __name__ == "__main__":
     api_key = "your_alpha_vantage_api_key"
     keywords = ["your_keywords"]
-    subreddit = "your_subreddit"
+    subreddits = ["/r/gaming", "/r/Games", "/r/gamedev", "/r/GameIndustry", "/r/gamernews", "/r/truegaming", "/r/GamingLeaksAndRumours"]
     interval = 60 
 
-    main(api_key, keywords, subreddit, interval)
+    main(api_key, keywords, subreddits, interval)
